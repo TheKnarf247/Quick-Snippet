@@ -36,6 +36,7 @@ from PyQt5.QtWidgets import (
 
 from _internal.version import __version__
 from app.widgets import NoteListItemWidget
+from app.config_manager import ConfigManager
 
 APP_NAME = "Quick Snippet"
 APP_DIR = Path(os.getenv("APPDATA") or Path.home()) / APP_NAME
@@ -73,32 +74,22 @@ def app_icon_path() -> str:
         return str(ico_path)
     return ""
 
-
-def load_config() -> configparser.ConfigParser:
-    config = configparser.ConfigParser()
-    config.read(CONFIG_FILE, encoding="utf-8")
-    return config
-
-
-def save_config(config: configparser.ConfigParser) -> None:
-    with open(CONFIG_FILE, "w", encoding="utf-8") as fh:
-        config.write(fh)
-
-
 def ensure_default_data() -> None:
-    config = load_config()
+    config_manager = ConfigManager(CONFIG_FILE)
+    config = config_manager.load()
+
     if not config.sections():
         config.add_section("Category 1")
         config.set("Category 1", "item1_title", "Example Snippet")
         config.set("Category 1", "item1_content", "Example text goes here.")
-        save_config(config)
-
+        config_manager.save()
 
 class QuickSnippetWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.settings = QSettings(str(SETTINGS_FILE), QSettings.IniFormat)
-        self.config = load_config()
+        self.config_manager = ConfigManager(CONFIG_FILE)
+        self.config = self.config_manager.load()
         self.current_category = None
         self.current_note_title = None
         self.is_editing = False
@@ -247,7 +238,7 @@ class QuickSnippetWindow(QMainWindow):
             if imported_first_category is None:
                 imported_first_category = category_name
 
-        save_config(self.config)
+        self.config_manager.save()
         self.load_categories()
 
         if imported_first_category:
@@ -406,7 +397,7 @@ class QuickSnippetWindow(QMainWindow):
                 self.config[category_name][f"item{index}_content"] = content
                 imported_titles.append(title)
 
-            save_config(self.config)
+            self.config_manager.save()
             self.load_categories()
             self.select_category_by_name(category_name)
             self.load_notes()
@@ -473,7 +464,7 @@ class QuickSnippetWindow(QMainWindow):
             self.config[target_category][f"item{index}_title"] = title
             self.config[target_category][f"item{index}_content"] = content
 
-            save_config(self.config)
+            self.config_manager.save()
             self.load_categories()
             self.select_category_by_name(target_category)
             self.load_notes()
@@ -696,7 +687,7 @@ class QuickSnippetWindow(QMainWindow):
 
         self.reindex_category(self.current_category)
         self.reindex_category(target_category)
-        save_config(self.config)
+        self.config_manager.save()
 
         moved_title = self.current_note_title
         self.current_note_title = None
@@ -1040,7 +1031,7 @@ class QuickSnippetWindow(QMainWindow):
             )
 
     def load_categories(self):
-        self.config = load_config()
+        self.config = self.config_manager.load()
         self.category_list.clear()
         for section in self.config.sections():
             self.category_list.addItem(section)
@@ -1144,7 +1135,7 @@ class QuickSnippetWindow(QMainWindow):
         for key, value in self.config[category].items():
             if key.endswith("_title") and value == title:
                 self.config[category][key.replace("_title", "_content")] = content
-                save_config(self.config)
+                self.config_manager.save()
                 return
 
     def add_category(self):
@@ -1157,7 +1148,7 @@ class QuickSnippetWindow(QMainWindow):
             return
 
         self.config.add_section(name)
-        save_config(self.config)
+        self.config_manager.save()
         self.load_categories()
         matches = self.category_list.findItems(name, Qt.MatchExactly)
         if matches:
@@ -1182,7 +1173,7 @@ class QuickSnippetWindow(QMainWindow):
         for key, value in self.config[self.current_category].items():
             self.config[new_name][key] = value
         self.config.remove_section(self.current_category)
-        save_config(self.config)
+        self.config_manager.save()
         self.load_categories()
         matches = self.category_list.findItems(new_name, Qt.MatchExactly)
         if matches:
@@ -1201,7 +1192,7 @@ class QuickSnippetWindow(QMainWindow):
         self.config.remove_section(self.current_category)
         if not self.config.sections():
             self.config.add_section("Category 1")
-        save_config(self.config)
+        self.config_manager.save()
         self.load_categories()
 
     def add_note(self):
@@ -1221,7 +1212,7 @@ class QuickSnippetWindow(QMainWindow):
         index = self.get_next_item_index(self.current_category)
         self.config[self.current_category][f"item{index}_title"] = title
         self.config[self.current_category][f"item{index}_content"] = ""
-        save_config(self.config)
+        self.config_manager.save()
         self.load_notes()
         self.select_note_by_title(title)
         self.start_editing_content()
@@ -1247,7 +1238,7 @@ class QuickSnippetWindow(QMainWindow):
             if key.endswith("_title") and value == self.current_note_title:
                 self.config[self.current_category][key] = new_title
                 break
-        save_config(self.config)
+        self.config_manager.save()
         self.load_notes()
         self.select_note_by_title(new_title)
 
@@ -1273,7 +1264,7 @@ class QuickSnippetWindow(QMainWindow):
             self.config.remove_option(self.current_category, key)
 
         self.reindex_category(self.current_category)
-        save_config(self.config)
+        self.config_manager.save()
         self.load_notes()
 
     def reindex_category(self, category: str):
