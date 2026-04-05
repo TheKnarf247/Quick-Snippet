@@ -1,7 +1,6 @@
 import configparser
 import os
 import sys
-import json
 import ctypes
 
 try:
@@ -15,7 +14,6 @@ from PyQt5.QtWidgets import (
     QAction,
     QApplication,
     QDialog,
-    QFileDialog,
     QHBoxLayout,
     QInputDialog,
     QLabel,
@@ -43,6 +41,7 @@ from app.theme_manager import (
 )
 from app.startup import run_app
 from app.tray_manager import TrayManager
+from app.import_export import ImportExportManager
 
 APP_NAME = "Quick Snippet"
 APP_DIR = Path(os.getenv("APPDATA") or Path.home()) / APP_NAME
@@ -77,6 +76,7 @@ class QuickSnippetWindow(QMainWindow):
         self.current_theme = self.settings.value("App/theme", "dark", type=str)
         self.tray_manager = TrayManager(self, APP_NAME)
         self.tray_icon = None
+        self.import_export_manager = ImportExportManager(self, APP_NAME)
         self.setup_defaults()
         self.build_ui()
         self.apply_theme(self.current_theme)
@@ -160,131 +160,6 @@ class QuickSnippetWindow(QMainWindow):
         menu.addSeparator()
         menu.addAction(minimize_on_close_action)
         menu.addAction(minimize_on_minimize_action)
-    
-    def export_all_data(self):
-        categories = []
-
-        for category in self.config.sections():
-            categories.append({
-                "category": category,
-                "snippets": self.get_category_snippets(category),
-            })
-
-        data = {
-            "type": "full_backup",
-            "categories": categories,
-        }
-
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export All Categories",
-            "QuickSnippetBackup.json",
-            "JSON Files (*.json)"
-        )
-
-        if not file_path:
-            return
-
-        try:
-            with open(file_path, "w", encoding="utf-8") as fh:
-                json.dump(data, fh, indent=2, ensure_ascii=False)
-            self.statusBar().showMessage("All categories exported.", 3000)
-        except Exception as e:
-            QMessageBox.warning(self, APP_NAME, f"Failed to export backup:\n{e}")
-
-    def import_full_backup(self, data: dict):
-        categories = data.get("categories", [])
-        if not categories:
-            QMessageBox.warning(self, APP_NAME, "That backup file contains no categories.")
-            return
-
-        imported_first_category = None
-
-        for category_data in categories:
-            category_name = (category_data.get("category") or "Imported Category").strip() or "Imported Category"
-            snippets = category_data.get("snippets", [])
-
-            if category_name in self.config.sections():
-                category_name = self.make_unique_category_name(category_name)
-
-            self.config.add_section(category_name)
-
-            for snippet in snippets:
-                title = (snippet.get("title") or "Imported Snippet").strip() or "Imported Snippet"
-                content = snippet.get("content", "")
-
-                index = self.get_next_item_index(category_name)
-                self.config[category_name][f"item{index}_title"] = title
-                self.config[category_name][f"item{index}_content"] = content
-
-            if imported_first_category is None:
-                imported_first_category = category_name
-
-        self.config_manager.save()
-        self.load_categories()
-
-        if imported_first_category:
-            self.select_category_by_name(imported_first_category)
-            self.load_notes()
-
-        self.statusBar().showMessage("Backup imported.", 3000)
-
-    def export_category(self):
-        if not self.current_category:
-            QMessageBox.information(self, APP_NAME, "Please select a category to export.")
-            return
-
-        data = {
-            "type": "category",
-            "category": self.current_category,
-            "snippets": self.get_category_snippets(self.current_category),
-        }
-
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export Category",
-            f"{self.current_category}.json",
-            "JSON Files (*.json)"
-        )
-
-        if not file_path:
-            return
-
-        try:
-            with open(file_path, "w", encoding="utf-8") as fh:
-                json.dump(data, fh, indent=2, ensure_ascii=False)
-            self.statusBar().showMessage("Category exported.", 3000)
-        except Exception as e:
-            QMessageBox.warning(self, APP_NAME, f"Failed to export category:\n{e}")
-
-    def export_note(self):
-        if not self.current_category or not self.current_note_title:
-            QMessageBox.information(self, APP_NAME, "Please select a snippet to export.")
-            return
-
-        data = {
-            "type": "snippet",
-            "category": self.current_category,
-            "title": self.current_note_title,
-            "content": self.get_note_content(self.current_category, self.current_note_title),
-        }
-
-        file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "Export Snippet",
-            f"{self.current_note_title}.json",
-            "JSON Files (*.json)"
-        )
-
-        if not file_path:
-            return
-
-        try:
-            with open(file_path, "w", encoding="utf-8") as fh:
-                json.dump(data, fh, indent=2, ensure_ascii=False)
-            self.statusBar().showMessage("Snippet exported.", 3000)
-        except Exception as e:
-            QMessageBox.warning(self, APP_NAME, f"Failed to export snippet:\n{e}")
 
     def get_category_snippets(self, category: str) -> list[dict]:
         snippets = []
@@ -301,161 +176,21 @@ class QuickSnippetWindow(QMainWindow):
 
         return snippets
 
+    def export_all_data(self):
+        self.import_export_manager.export_all_data()
+
+    def import_full_backup(self, data: dict):
+        self.import_export_manager.import_full_backup(data)
+
+    def export_category(self):
+        self.import_export_manager.export_category()
+
+    def export_note(self):
+        self.import_export_manager.export_note()
+
     def import_data(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Import Data",
-            "",
-            "JSON Files (*.json)"
-        )
-
-        if not file_path:
-            return
-
-        try:
-            with open(file_path, "r", encoding="utf-8") as fh:
-                data = json.load(fh)
-        except Exception as e:
-            QMessageBox.warning(self, APP_NAME, f"Failed to read import file:\n{e}")
-            return
-
-        data_type = data.get("type")
-
-        if data_type == "full_backup":
-            self.import_full_backup(data)
-            return
-
-        if data_type == "category":
-            category_name = data.get("category", "Imported Category").strip() or "Imported Category"
-            snippets = data.get("snippets", [])
-
-            if category_name in self.config.sections():
-                msg = QMessageBox(self)
-                msg.setWindowTitle("Import Category")
-                msg.setText(f"The category '{category_name}' already exists.")
-                msg.setInformativeText("What would you like to do?")
-                merge_button = msg.addButton("Merge", QMessageBox.AcceptRole)
-                rename_button = msg.addButton("Rename Imported Category", QMessageBox.ActionRole)
-                cancel_button = msg.addButton("Cancel", QMessageBox.RejectRole)
-                msg.setIcon(QMessageBox.Question)
-                msg.exec_()
-
-                clicked = msg.clickedButton()
-
-                if clicked == cancel_button:
-                    return
-
-                if clicked == rename_button:
-                    new_category, ok = QInputDialog.getText(
-                        self,
-                        "Rename Imported Category",
-                        "Enter a new category name:",
-                        text=f"{category_name} Imported"
-                    )
-                    if not ok or not new_category.strip():
-                        return
-
-                    category_name = new_category.strip()
-                    if category_name in self.config.sections():
-                        category_name = self.make_unique_category_name(category_name)
-
-                    self.config.add_section(category_name)
-
-                elif clicked == merge_button:
-                    pass
-            else:
-                self.config.add_section(category_name)
-
-            imported_titles = []
-
-            for snippet in snippets:
-                title = (snippet.get("title") or "Imported Snippet").strip() or "Imported Snippet"
-                content = snippet.get("content", "")
-
-                title = self.make_unique_note_title(category_name, title)
-
-                index = self.get_next_item_index(category_name)
-                self.config[category_name][f"item{index}_title"] = title
-                self.config[category_name][f"item{index}_content"] = content
-                imported_titles.append(title)
-
-            self.config_manager.save()
-            self.load_categories()
-            self.select_category_by_name(category_name)
-            self.load_notes()
-
-            if imported_titles:
-                self.select_note_by_title(imported_titles[0])
-
-            self.statusBar().showMessage("Category imported.", 3000)
-            return
-
-        if data_type == "snippet":
-            available_categories = list(self.config.sections())
-            category_choices = available_categories + ["New Category..."]
-
-            if not available_categories:
-                new_category, ok = QInputDialog.getText(
-                    self,
-                    "Import Snippet",
-                    "No categories exist yet.\nEnter a new category name:",
-                    text="Category 1"
-                )
-                if not ok or not new_category.strip():
-                    return
-
-                target_category = new_category.strip()
-
-                if not target_category:
-                    return
-
-                if target_category not in self.config.sections():
-                    self.config.add_section(target_category)
-            else:
-                target_category, ok = QInputDialog.getItem(
-                    self,
-                    "Import Snippet",
-                    "Choose a category:",
-                    category_choices,
-                    0,
-                    False
-                )
-
-                if not ok or not target_category:
-                    return
-
-                if target_category == "New Category...":
-                    new_category, ok = QInputDialog.getText(
-                        self,
-                        "New Category",
-                        "Enter a new category name:"
-                    )
-                    if not ok or not new_category.strip():
-                        return
-
-                    target_category = new_category.strip()
-
-                    if target_category not in self.config.sections():
-                        self.config.add_section(target_category)
-
-            title = (data.get("title") or "Imported Snippet").strip() or "Imported Snippet"
-            content = data.get("content", "")
-            title = self.make_unique_note_title(target_category, title)
-
-            index = self.get_next_item_index(target_category)
-            self.config[target_category][f"item{index}_title"] = title
-            self.config[target_category][f"item{index}_content"] = content
-
-            self.config_manager.save()
-            self.load_categories()
-            self.select_category_by_name(target_category)
-            self.load_notes()
-            self.select_note_by_title(title)
-            self.statusBar().showMessage("Snippet imported.", 3000)
-            return
-
-        QMessageBox.warning(self, APP_NAME, "That file is not a valid Quick Snippet import file.")
-
+        self.import_export_manager.import_data()
+    
     def make_unique_category_name(self, base_name: str) -> str:
         if base_name not in self.config.sections():
             return base_name
