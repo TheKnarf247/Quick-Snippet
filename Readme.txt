@@ -1,27 +1,48 @@
 Quick Snippet v1.0.2
 
-Quick Snippet is a lightweight Windows desktop application for storing, organizing, and quickly copying reusable text snippets.
+A fast, lightweight desktop app for managing reusable text snippets.
 
-Features:
-- Organize snippets into categories
-- One-click copy functionality
-- System tray support (minimize instead of closing)
-- Import and export snippets via JSON
-- Light and dark themes
+---
 
-Usage:
-- Select a category to view its snippets
-- Click a snippet to copy it to your clipboard
-- Use the File menu to import or export data
-- Settings are available through the menu
+What’s New in v1.0.2
 
-Notes:
-- Snippets and settings are stored in your AppData folder
-- Closing the window may minimize to the system tray depending on settings
-- Right-click the tray icon for additional options
+* Added snippet filtering (search box with live results)
+* Added snippet sorting (A–Z and Z–A)
+* Added category filtering (search categories instantly)
+* Added category sorting (A–Z and Z–A)
 
-Install Location:
-- By default, the app installs to Program Files
+---
 
-Created by Frank Noonan
-Knarf Industries
+Improvements
+
+* Improved layout and spacing for filter and sort controls
+* More consistent behavior across categories and snippets
+* Better usability when working with larger snippet collections
+
+---
+
+Fixes
+
+* Fixed minor UI sizing/alignment issues
+* General stability improvements
+
+---
+
+Features
+
+* Create, edit, rename, and delete snippets
+* Organize snippets into categories
+* System tray support
+* Import and export snippets and categories (JSON)
+* Light and dark themes
+* One-click copy to clipboard
+
+---
+
+Version: 1.0.2
+
+Author: Frank Noonan
+
+---
+
+Thanks for using Quick Snippet.
