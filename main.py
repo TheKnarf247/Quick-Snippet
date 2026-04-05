@@ -43,6 +43,7 @@ from app.theme_manager import (
     app_icon_path,
     set_windows_title_bar_theme,
 )
+from app.startup import run_app
 
 APP_NAME = "Quick Snippet"
 APP_DIR = Path(os.getenv("APPDATA") or Path.home()) / APP_NAME
@@ -1411,26 +1412,4 @@ def add_menu_bar(window: QuickSnippetWindow):
     about_menu.addAction(about_action)
 
 if __name__ == "__main__":
-    ensure_default_data()
-
-    try:
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-            "Knarf.QuickSnippet.1"
-        )
-    except Exception:
-        pass
-
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
-
-    icon_file = app_icon_path()
-    if icon_file:
-        app.setWindowIcon(QIcon(icon_file))
-
-    window = QuickSnippetWindow()
-    add_menu_bar(window)
-
-    current_theme = window.settings.value("App/theme", "dark", type=str)
-    set_windows_title_bar_theme(window, current_theme == "dark")
-
-    sys.exit(app.exec_())
+    run_app(QuickSnippetWindow, add_menu_bar, ensure_default_data)
