@@ -58,8 +58,9 @@ class QuickSnippetWindow(QMainWindow):
         self.tray_icon = None
         self.import_export_manager = ImportExportManager(self, APP_NAME)
 
-        self.category_sort_mode = "last_used"
+        self.category_sort_mode = "az"
         self.category_sort_ascending = True
+        self.category_filter_text = ""
         self.snippet_sort_mode = "az"
         self.snippet_sort_ascending = True
         self.snippet_filter_text = ""
@@ -290,6 +291,37 @@ class QuickSnippetWindow(QMainWindow):
             "Categories", [add_btn, delete_btn, rename_btn]
         )
 
+        controls_row = QWidget()
+        controls_layout = QHBoxLayout(controls_row)
+        controls_layout.setContentsMargins(8, 0, 8, 4)
+        controls_layout.setSpacing(6)
+
+        self.category_filter_input = QLineEdit()
+        self.category_filter_input.setPlaceholderText("Filter categories...")
+        self.category_filter_input.setFixedHeight(28)
+        self.category_filter_input.textChanged.connect(self.on_category_filter_changed)
+
+        self.category_clear_filter_btn = QToolButton()
+        self.category_clear_filter_btn.setText("✕")
+        self.category_clear_filter_btn.setToolTip("Clear filter")
+        self.category_clear_filter_btn.clicked.connect(self.clear_category_filter)
+
+        self.category_sort_combo = QComboBox()
+        self.category_sort_combo.addItem("A-Z", "az")
+        self.category_sort_combo.setFixedWidth(90)
+        self.category_sort_combo.setFixedHeight(28)
+        self.category_sort_combo.currentIndexChanged.connect(self.on_category_sort_changed)
+
+        self.category_sort_direction_btn = QToolButton()
+        self.category_sort_direction_btn.setText("↑")
+        self.category_sort_direction_btn.setToolTip("Toggle ascending/descending")
+        self.category_sort_direction_btn.clicked.connect(self.toggle_category_sort_direction)
+
+        controls_layout.addWidget(self.category_filter_input, 1)
+        controls_layout.addWidget(self.category_clear_filter_btn)
+        controls_layout.addWidget(self.category_sort_combo)
+        controls_layout.addWidget(self.category_sort_direction_btn)
+
         self.category_list = QListWidget()
 
         font = self.category_list.font()
@@ -298,9 +330,42 @@ class QuickSnippetWindow(QMainWindow):
         self.category_list.setFont(font)
 
         self.category_list.itemSelectionChanged.connect(self.on_category_changed)
+
+        layout.addWidget(controls_row)
         layout.addWidget(self.category_list, 1)
         return wrapper
 
+    def on_category_filter_changed(self, text: str):
+        self.category_filter_text = text.strip()
+        self.load_categories()
+
+    def clear_category_filter(self):
+        self.category_filter_input.clear()
+
+    def on_category_sort_changed(self):
+        self.category_sort_mode = self.category_sort_combo.currentData()
+        self.load_categories()
+
+    def toggle_category_sort_direction(self):
+        self.category_sort_ascending = not self.category_sort_ascending
+        self.category_sort_direction_btn.setText("↑" if self.category_sort_ascending else "↓")
+        self.load_categories()
+
+    def get_sorted_filtered_categories(self) -> list[str]:
+        categories = list(self.config.sections())
+
+        filter_text = getattr(self, "category_filter_text", "").lower()
+        if filter_text:
+            categories = [name for name in categories if filter_text in name.lower()]
+
+        if self.category_sort_mode == "az":
+            categories.sort(
+                key=lambda name: name.lower(),
+                reverse=not self.category_sort_ascending
+            )
+
+        return categories
+    
     def build_note_panel(self):
         add_btn = self.make_small_button("IconAdd.png", self.add_note, "Add snippet")
         delete_btn = self.make_small_button(
@@ -336,6 +401,7 @@ class QuickSnippetWindow(QMainWindow):
         self.snippet_sort_combo = QComboBox()
         self.snippet_sort_combo.addItem("A-Z", "az")
         self.snippet_sort_combo.currentIndexChanged.connect(self.on_snippet_sort_changed)
+        self.snippet_sort_combo.setFixedWidth(90)
 
         self.snippet_sort_direction_btn = QToolButton()
         self.snippet_sort_direction_btn.setText("↑")
@@ -503,6 +569,10 @@ class QuickSnippetWindow(QMainWindow):
                     color: #2b2f36;
                 }
 
+                QComboBox {
+                    padding: 2px 6px;
+                }
+
                 QListWidget, QPlainTextEdit, QLineEdit, QComboBox {
                     background-color: #ffffff;
                     color: #4a4f57;
@@ -606,6 +676,10 @@ class QuickSnippetWindow(QMainWindow):
 
                 QLabel {
                     color: #e8eaed;
+                }
+
+                QComboBox {
+                    padding: 2px 6px;
                 }
 
                 QListWidget, QPlainTextEdit, QLineEdit, QComboBox {
@@ -752,13 +826,20 @@ class QuickSnippetWindow(QMainWindow):
 
     def load_categories(self):
         self.config = self.config_manager.load()
+        selected_category = self.current_category
+
         self.category_list.clear()
-        for section in self.config.sections():
+
+        category_names = self.get_sorted_filtered_categories()
+        for section in category_names:
             self.category_list.addItem(section)
 
-        if self.category_list.count() > 0:
+        if selected_category:
+            self.select_category_by_name(selected_category)
+
+        if self.category_list.count() > 0 and self.category_list.currentRow() < 0:
             self.category_list.setCurrentRow(0)
-        else:
+        elif self.category_list.count() == 0:
             self.current_category = None
             self.load_notes()
 
