@@ -1,129 +1,236 @@
-✂️ Quick Snippet
+# Quick Snippet
 
-Quick Snippet is a lightweight Windows utility designed to store, organize, and instantly copy reusable text snippets.
+A fast, lightweight desktop application for managing and reusing text snippets — built for efficiency, consistency, and speed.
 
-Built for speed, simplicity, and zero friction — no cloud, no accounts, no nonsense.
+---
 
-<img width="1199" height="746" alt="Screenshot 2026-04-04 025136" src="https://github.com/user-attachments/assets/d271f198-5615-4d23-9dd0-f724a2e317e2" />
-
-🚀 What It Does
-
-Quick Snippet lets you:
-
-Store frequently used text (commands, responses, notes, templates)
-Organize snippets into categories
-Instantly copy any snippet to your clipboard with one click
-Run quietly in the system tray for quick access anytime
-Import and export your data for backup or sharing
-⚡ How It Works
-
-The app is built around a simple workflow:
-
-1. Create Categories
-
-Think of these like folders:
-
-Work
-Commands
-Emails
-AI Prompts
-etc.
-2. Add Snippets
+## Overview
 
 
-Each snippet has:
+Quick Snippet is designed to eliminate repetitive typing by allowing you to store, organize, and instantly reuse commonly used text.
 
-Name → what you see in the list
-Content → the actual text that gets copied
+It is especially useful for:
 
-The UI shows a preview of the snippet content directly under the name so you can quickly identify what you need.
+* Incident notes
+* Email responses
+* Ticket updates
+* Troubleshooting steps
+* Standardized communication
 
-3. Copy Instantly
+<img width="1202" height="746" alt="Screenshot 2026-04-05 014559" src="https://github.com/user-attachments/assets/8a52c042-20d5-421e-94a7-b854188cc09e" />
 
-Click the copy button next to a snippet → it is immediately copied to your clipboard.
+---
 
-No extra steps. No confirmation needed.
+## Features
 
-(Optional notification can be enabled in settings.)
+### Snippet Management
 
-4. Always Available
-App minimizes to the system tray
-Doesn’t get in your way
-Can optionally start with Windows
-📂 Import / Export
+* Create, edit, rename, and delete snippets
+* Store large or small blocks of text
+* One-click copy to clipboard
 
-Quick Snippet supports flexible data management:
+### Category Organization
 
-Export Options
-Export all categories
-Export a single category
-Export a single snippet
-Import Options
-Import full datasets
-Import individual snippets into a category of your choice
+* Group snippets into categories
+* Keep workflows organized and easy to navigate
 
-All data is stored in JSON format, making it easy to back up or edit manually.
+### Filtering (Search)
 
-⚙️ Settings
+* Instantly filter snippets by name
+* Filter categories independently
+* Results update in real time as you type
 
-Available under File → Settings:
+### Sorting
 
-Start with Windows
-Start minimized
-Show “copied” notification
-Minimize to tray on close
-Minimize to tray on minimize
-❌ Exit vs Close (Important)
-Clicking the X → minimizes to tray (if enabled)
-Using File → Exit → fully closes the application
-📁 Data Storage
+* Alphabetical sorting (A–Z / Z–A)
+* Available for both categories and snippets
+* Toggle sort direction with a single click
 
-User data is stored locally:
+### System Tray Integration
 
-%APPDATA%\Quick Snippet
+* Minimize to tray for quick access
+* Keep the app running in the background
 
-This keeps your data:
+### Import / Export
 
-safe from uninstall
-user-specific
-writable without admin permissions
-🧠 Why This Exists
+* Backup or transfer your snippets via JSON
+* Easy migration between systems
 
-Because copying the same damn text over and over gets old fast.
+### Themes
 
-Quick Snippet was built to be:
+* Light and dark mode support
 
-faster than Notepad
-simpler than clipboard managers
-focused on intentional reuse, not history spam
-🛠 Built With
-Python
-PyQt
-PyInstaller
-Inno Setup
-📦 Installation
+---
 
-Run the installer and follow the prompts.
+## Installation
 
-Default install location:
+1. Download the latest release
+2. Run the installer
+3. Launch Quick Snippet
 
-C:\Program Files\Quick Snippet
+> Note: Windows may display a SmartScreen warning for new applications. Click "More Info" → "Run anyway" if prompted.
 
-You can optionally:
+---
 
-create a desktop shortcut
-add it to the Start Menu
-🔥 Tips
-Use it for:
-frequently used commands
-customer responses
-AI prompts
-code snippets
-Keep categories tight and focused for speed
-Export your data occasionally as a backup
-👊 Final Thought
+## User Interface
 
-This isn’t trying to be everything.
+### Main Layout
 
-It just does one thing really well —
-get your text where you need it, instantly.
+The application is divided into three primary sections:
+
+* **Categories Panel (left)**
+* **Snippets Panel (center)**
+* **Editor Panel (right)**
+
+---
+
+<img width="1202" height="746" alt="Screenshot 2026-04-05 014559" src="https://github.com/user-attachments/assets/8a52c042-20d5-421e-94a7-b854188cc09e" />
+
+---
+
+## Using Quick Snippet
+
+### Creating a Category
+
+1. Click the **Add Category** button
+2. Enter a name
+3. Press OK
+
+---
+
+### Screenshot – Add Category
+
+<img width="1196" height="757" alt="Screenshot 2026-04-05 014733" src="https://github.com/user-attachments/assets/20978691-1aa0-4bd3-99d4-c7eabb863e56" />
+
+---
+
+### Creating a Snippet
+
+1. Select a category
+2. Click the **Add Snippet** button
+3. Enter a name
+4. Add content in the editor panel
+5. Click Save
+
+---
+
+### Screenshot – Create Snippet
+
+<img width="1201" height="750" alt="Screenshot 2026-04-05 014841" src="https://github.com/user-attachments/assets/db8d88cb-b4b8-4c49-a95b-085d3cb60f8f" />
+
+<img width="1198" height="745" alt="Screenshot 2026-04-05 014949" src="https://github.com/user-attachments/assets/f78eb486-1274-4398-a941-85dbcb7f6b70" />
+
+---
+
+### Editing a Snippet
+
+* Select a snippet
+* Click the edit button
+* Modify the content in the editor
+* Click Save
+
+---
+
+### Copying a Snippet
+
+* Click the **Copy** button next to a snippet
+* The content is instantly copied to your clipboard
+
+---
+
+### Filtering Snippets
+
+Use the search box in the Snippets panel:
+
+* Start typing to filter results
+* Matching snippets remain visible
+* Clear the filter using the “X” button
+
+---
+
+### Filtering Categories
+
+Use the search box in the Categories panel:
+
+* Quickly locate categories
+* Ideal for large collections
+
+### Sorting
+
+Both Categories and Snippets support sorting:
+
+* Select **A–Z** from the dropdown
+* Use the arrow button to toggle:
+
+  * ↑ Ascending
+  * ↓ Descending
+
+---
+
+## Import / Export
+
+### Exporting Data
+
+* Export your snippets to a JSON file
+* Useful for backups or sharing
+
+### Importing Data
+
+* Import previously exported JSON files
+* Merge or restore your snippet library
+
+---
+
+## Troubleshooting
+
+### App not starting
+
+* Ensure all files are present after installation
+* Try running as administrator
+
+### Missing data
+
+* Verify import/export paths
+* Check JSON file integrity
+
+### UI issues
+
+* Restart the application
+* Check for updates
+
+---
+
+## Roadmap
+
+Planned improvements may include:
+
+* Additional sorting options (e.g., last used)
+* Keyboard shortcuts
+* Enhanced search capabilities
+* UI customization options
+
+---
+
+## Version
+
+**v1.0.2**
+
+---
+
+## Author
+
+Frank Noonan
+
+---
+
+## Feedback
+
+If you have suggestions, feature requests, or run into issues, feedback is always welcome.
+
+---
+
+## License
+
+(Insert license information here if applicable)
+
+---
