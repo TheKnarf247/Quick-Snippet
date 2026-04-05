@@ -35,6 +35,7 @@ from PyQt5.QtWidgets import (
 )
 
 from _internal.version import __version__
+from app.widgets import NoteListItemWidget
 
 APP_NAME = "Quick Snippet"
 APP_DIR = Path(os.getenv("APPDATA") or Path.home()) / APP_NAME
@@ -91,57 +92,6 @@ def ensure_default_data() -> None:
         config.set("Category 1", "item1_title", "Example Snippet")
         config.set("Category 1", "item1_content", "Example text goes here.")
         save_config(config)
-
-
-class NoteListItemWidget(QWidget):
-    def __init__(self, title: str, preview: str, copy_callback, theme: str):
-        super().__init__()
-
-        self.title_label = QLabel(title)
-        self.title_label.setObjectName("snippetTitleLabel")
-        self.title_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-
-        title_font = self.title_label.font()
-        title_font.setPointSize(14)
-        title_font.setBold(True)
-        self.title_label.setFont(title_font)
-
-        preview_text = preview.replace("\n", " ").strip()
-        if len(preview_text) > 90:
-            preview_text = preview_text[:87] + "..."
-
-        self.preview_label = QLabel(preview_text)
-        self.preview_label.setObjectName("snippetPreviewLabel")
-        self.preview_label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
-        self.preview_label.setWordWrap(True)
-
-        preview_font = self.preview_label.font()
-        preview_font.setPointSize(11)
-        preview_font.setBold(False)
-        self.preview_label.setFont(preview_font)
-
-        text_layout = QVBoxLayout()
-        text_layout.setContentsMargins(0, 0, 0, 0)
-        text_layout.setSpacing(4)
-        text_layout.addWidget(self.title_label)
-        text_layout.addWidget(self.preview_label)
-        text_layout.addStretch(1)
-
-        self.copy_button = QToolButton()
-        self.copy_button.setToolTip("Copy snippet")
-        self.copy_button.setProperty("icon_filename", "IconCopy.png")
-        self.copy_button.setIcon(QIcon(icon_path("IconCopy.png", theme)))
-        self.copy_button.setIconSize(QSize(24, 24))
-        self.copy_button.setFixedSize(40, 40)
-        self.copy_button.clicked.connect(copy_callback)
-
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 8, 10, 8)
-        layout.setSpacing(10)
-        layout.addLayout(text_layout, 1)
-        layout.addWidget(self.copy_button, 0, Qt.AlignTop)
-
-        self.setMinimumHeight(72)
 
 
 class QuickSnippetWindow(QMainWindow):
@@ -1140,8 +1090,10 @@ class QuickSnippetWindow(QMainWindow):
                 title,
                 preview,
                 lambda checked=False, t=title: self.copy_note_by_title(t),
+                icon_path,
                 self.current_theme,
             )
+
             self.note_list.setItemWidget(item, widget)
 
         if self.note_list.count() > 0:
