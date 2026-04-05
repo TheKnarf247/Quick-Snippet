@@ -2,6 +2,7 @@ import configparser
 from pathlib import Path
 
 
+
 class ConfigManager:
     def __init__(self, config_file: str):
         self.config_file = Path(config_file)

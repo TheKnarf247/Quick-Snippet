@@ -3,7 +3,6 @@ import ctypes
 from ctypes import wintypes
 from pathlib import Path
 
-
 def resource_path(relative_path: str) -> Path:
     base_path = getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent)
     return Path(base_path) / relative_path
@@ -44,3 +43,4 @@ def set_windows_title_bar_theme(window, dark: bool):
         )
     except Exception:
         pass
+

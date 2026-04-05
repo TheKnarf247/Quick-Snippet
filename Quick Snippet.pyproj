@@ -22,6 +22,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="app\config_manager.py" />
+    <Compile Include="app\constants.py" />
     <Compile Include="app\helpers.py" />
     <Compile Include="app\import_export.py" />
     <Compile Include="app\startup.py" />
