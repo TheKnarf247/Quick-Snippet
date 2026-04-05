@@ -1,20 +1,27 @@
 import os
 import sys
 from PyQt5.QtWidgets import (
-    QMainWindow, 
-    QPushButton, 
-    QMenu, 
-    QApplication, 
-    QAction, 
-    QSplitter, 
+    QMainWindow,
+    QPushButton,
+    QMenu,
+    QApplication,
+    QAction,
+    QSplitter,
     QListWidget,
     QMessageBox,
     QInputDialog,
     QPlainTextEdit,
     QListWidgetItem,
+    QLineEdit,
+    QComboBox,
+    QToolButton,
+    QWidget,
+    QHBoxLayout,
+    QVBoxLayout,
+    QLabel,
 )
 from _internal.version import __version__
-from PyQt5.QtCore import QSettings, QEvent
+from PyQt5.QtCore import QSettings, QEvent, Qt, QSize
 from PyQt5.QtGui import QIcon
 from pathlib import Path
 
@@ -50,16 +57,19 @@ class QuickSnippetWindow(QMainWindow):
         self.tray_manager = TrayManager(self, APP_NAME)
         self.tray_icon = None
         self.import_export_manager = ImportExportManager(self, APP_NAME)
+
+        self.category_sort_mode = "last_used"
+        self.category_sort_ascending = True
+        self.snippet_sort_mode = "az"
+        self.snippet_sort_ascending = True
+        self.snippet_filter_text = ""
+
         self.setup_defaults()
         self.build_ui()
         self.apply_theme(self.current_theme)
         self.tray_icon = self.tray_manager.create_tray_icon()
         self.load_categories()
         self.apply_startup_state()
-        self.category_sort_mode = "last_used"
-        self.category_sort_ascending = True
-        self.snippet_sort_mode = "last_used"
-        self.snippet_sort_ascending = True
 
     def refresh_button_icons(self):
         for button in self.findChildren(QPushButton):
@@ -76,7 +86,7 @@ class QuickSnippetWindow(QMainWindow):
         if hasattr(self, "tray_icon") and self.tray_icon:
             self.tray_icon.hide()
         QApplication.quit()
-    
+
     def populate_settings_menu(self, menu: QMenu):
         menu.clear()
 
@@ -163,7 +173,7 @@ class QuickSnippetWindow(QMainWindow):
 
     def import_data(self):
         self.import_export_manager.import_data()
-    
+
     def make_unique_category_name(self, base_name: str) -> str:
         if base_name not in self.config.sections():
             return base_name
@@ -230,7 +240,6 @@ class QuickSnippetWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
 
-        # top row: buttons only
         toolbar = QWidget()
         toolbar_layout = QHBoxLayout(toolbar)
         toolbar_layout.setContentsMargins(8, 6, 8, 2)
@@ -240,7 +249,6 @@ class QuickSnippetWindow(QMainWindow):
             toolbar_layout.addWidget(button)
         toolbar_layout.addStretch(1)
 
-        # second row: title only
         title_label = QLabel(title)
         title_label.setStyleSheet(
             """
@@ -311,10 +319,75 @@ class QuickSnippetWindow(QMainWindow):
             "Snippets", [add_btn, delete_btn, rename_btn, move_btn, edit_btn]
         )
 
+        controls_row = QWidget()
+        controls_layout = QHBoxLayout(controls_row)
+        controls_layout.setContentsMargins(8, 0, 8, 4)
+        controls_layout.setSpacing(6)
+
+        self.snippet_filter_input = QLineEdit()
+        self.snippet_filter_input.setPlaceholderText("Filter snippets...")
+        self.snippet_filter_input.textChanged.connect(self.on_snippet_filter_changed)
+
+        self.snippet_clear_filter_btn = QToolButton()
+        self.snippet_clear_filter_btn.setText("✕")
+        self.snippet_clear_filter_btn.setToolTip("Clear filter")
+        self.snippet_clear_filter_btn.clicked.connect(self.clear_snippet_filter)
+
+        self.snippet_sort_combo = QComboBox()
+        self.snippet_sort_combo.addItem("A-Z", "az")
+        self.snippet_sort_combo.currentIndexChanged.connect(self.on_snippet_sort_changed)
+
+        self.snippet_sort_direction_btn = QToolButton()
+        self.snippet_sort_direction_btn.setText("↑")
+        self.snippet_sort_direction_btn.setToolTip("Toggle ascending/descending")
+        self.snippet_sort_direction_btn.clicked.connect(self.toggle_snippet_sort_direction)
+
+        controls_layout.addWidget(self.snippet_filter_input, 1)
+        controls_layout.addWidget(self.snippet_clear_filter_btn)
+        controls_layout.addWidget(self.snippet_sort_combo)
+        controls_layout.addWidget(self.snippet_sort_direction_btn)
+
         self.note_list = QListWidget()
         self.note_list.itemSelectionChanged.connect(self.on_note_changed)
+
+        layout.addWidget(controls_row)
         layout.addWidget(self.note_list, 1)
         return wrapper
+
+    def on_snippet_filter_changed(self, text: str):
+        self.snippet_filter_text = text.strip()
+        self.load_notes()
+
+    def clear_snippet_filter(self):
+        self.snippet_filter_input.clear()
+
+    def on_snippet_sort_changed(self):
+        self.snippet_sort_mode = self.snippet_sort_combo.currentData()
+        self.load_notes()
+
+    def toggle_snippet_sort_direction(self):
+        self.snippet_sort_ascending = not self.snippet_sort_ascending
+        self.snippet_sort_direction_btn.setText("↑" if self.snippet_sort_ascending else "↓")
+        self.load_notes()
+
+    def get_sorted_filtered_note_titles(self, category: str) -> list[str]:
+        note_titles = []
+
+        if not category or category not in self.config:
+            return note_titles
+
+        for key, value in self.config[category].items():
+            if key.endswith("_title"):
+                note_titles.append(value)
+
+        filter_text = self.snippet_filter_text.lower()
+        if filter_text:
+            note_titles = [title for title in note_titles if filter_text in title.lower()]
+
+        if self.snippet_sort_mode == "az":
+            note_titles.sort(key=lambda title: title.lower(), reverse=not self.snippet_sort_ascending)
+
+        return note_titles
 
     def move_note(self):
         if not self.current_category or not self.current_note_title:
@@ -430,7 +503,7 @@ class QuickSnippetWindow(QMainWindow):
                     color: #2b2f36;
                 }
 
-                QListWidget, QPlainTextEdit {
+                QListWidget, QPlainTextEdit, QLineEdit, QComboBox {
                     background-color: #ffffff;
                     color: #4a4f57;
                     border: 1px solid #cfd4dc;
@@ -535,7 +608,7 @@ class QuickSnippetWindow(QMainWindow):
                     color: #e8eaed;
                 }
 
-                QListWidget, QPlainTextEdit {
+                QListWidget, QPlainTextEdit, QLineEdit, QComboBox {
                     background-color: #2b2d31;
                     color: #d6d9df;
                     border: 1px solid #3c4043;
@@ -690,6 +763,8 @@ class QuickSnippetWindow(QMainWindow):
             self.load_notes()
 
     def load_notes(self):
+        selected_title = self.current_note_title
+
         self.note_list.clear()
         self.content_header_label.setText("Select a snippet")
         self.content_editor.clear()
@@ -706,15 +781,7 @@ class QuickSnippetWindow(QMainWindow):
         self.category_header_label.setText("Categories")
         self.note_header_label.setText(f"{self.current_category} Snippets")
 
-        note_titles = []
-        for key, value in self.config[self.current_category].items():
-            if key.endswith("_title"):
-                note_titles.append(value)
-
-        def sort_key(title: str):
-            if title.lower().startswith("item"):
-                return title.lower()
-            return title.lower()
+        note_titles = self.get_sorted_filtered_note_titles(self.current_category)
 
         for title in note_titles:
             item = QListWidgetItem()
@@ -734,7 +801,10 @@ class QuickSnippetWindow(QMainWindow):
 
             self.note_list.setItemWidget(item, widget)
 
-        if self.note_list.count() > 0:
+        if selected_title:
+            self.select_note_by_title(selected_title)
+
+        if self.note_list.count() > 0 and self.note_list.currentRow() < 0:
             self.note_list.setCurrentRow(0)
 
     def on_category_changed(self):
@@ -1018,6 +1088,7 @@ class QuickSnippetWindow(QMainWindow):
 
         self.save_setting("App/start_with_windows", checked)
 
+
 def add_menu_bar(window: "QuickSnippetWindow"):
     menu_bar = window.menuBar()
 
@@ -1071,7 +1142,6 @@ def add_menu_bar(window: "QuickSnippetWindow"):
             window,
             f"About {APP_NAME} 2026",
             f"{APP_NAME} v{__version__}\n2026\n\nReusable text snippets for Windows.\n\nBy Frank Noonan",
-            
         )
     )
     about_menu.addAction(about_action)
