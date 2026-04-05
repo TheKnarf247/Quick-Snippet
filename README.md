@@ -228,9 +228,3 @@ Frank Noonan
 If you have suggestions, feature requests, or run into issues, feedback is always welcome.
 
 ---
-
-## License
-
-(Insert license information here if applicable)
-
----
