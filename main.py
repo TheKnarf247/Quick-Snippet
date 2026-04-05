@@ -27,8 +27,6 @@ from PyQt5.QtWidgets import (
     QPushButton,
     QPlainTextEdit,
     QSplitter,
-    QStyle,
-    QSystemTrayIcon,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -44,6 +42,7 @@ from app.theme_manager import (
     set_windows_title_bar_theme,
 )
 from app.startup import run_app
+from app.tray_manager import TrayManager
 
 APP_NAME = "Quick Snippet"
 APP_DIR = Path(os.getenv("APPDATA") or Path.home()) / APP_NAME
@@ -76,10 +75,12 @@ class QuickSnippetWindow(QMainWindow):
         self.is_editing = False
         self.is_quitting = False
         self.current_theme = self.settings.value("App/theme", "dark", type=str)
+        self.tray_manager = TrayManager(self, APP_NAME)
+        self.tray_icon = None
         self.setup_defaults()
         self.build_ui()
         self.apply_theme(self.current_theme)
-        self.create_tray_icon()
+        self.tray_icon = self.tray_manager.create_tray_icon()
         self.load_categories()
         self.apply_startup_state()
         self.category_sort_mode = "last_used"
@@ -920,40 +921,6 @@ class QuickSnippetWindow(QMainWindow):
             )
             set_windows_title_bar_theme(self, True)
 
-    def create_tray_icon(self):
-        icon_file = app_icon_path()
-        icon = QIcon(icon_file) if icon_file else self.style().standardIcon(QStyle.SP_FileDialogDetailedView)
-        self.tray_icon = QSystemTrayIcon(icon, self)
-        self.tray_icon.setToolTip(APP_NAME)
-
-        menu = QMenu(self)
-        open_action = QAction(f"Open {APP_NAME}", self)
-        open_action.triggered.connect(self.restore_from_tray)
-        menu.addAction(open_action)
-
-        restart_action = QAction(f"Restart {APP_NAME}", self)
-        restart_action.triggered.connect(self.restart_app)
-        menu.addAction(restart_action)
-
-        menu.addSeparator()
-
-        exit_action = QAction(f"Exit {APP_NAME}", self)
-        exit_action.triggered.connect(self.exit_application)
-        menu.addAction(exit_action)
-
-        self.tray_icon.setContextMenu(menu)
-        self.tray_icon.activated.connect(self.on_tray_icon_activated)
-        self.tray_icon.show()
-
-    def on_tray_icon_activated(self, reason):
-        if reason == QSystemTrayIcon.DoubleClick:
-            self.restore_from_tray()
-
-    def restore_from_tray(self):
-        self.showNormal()
-        self.raise_()
-        self.activateWindow()
-
     def apply_startup_state(self):
         if (
             self.settings.value("App/start_minimized", False, type=bool)
@@ -981,35 +948,26 @@ class QuickSnippetWindow(QMainWindow):
         if self.settings.value("App/minimize_to_tray_on_close", True, type=bool):
             event.ignore()
             self.hide()
-            self.tray_icon.showMessage(
-                "Quick Snippet",
-                "App minimized to tray",
-                QSystemTrayIcon.Information,
-                2000,
-            )
-        else:
-            event.accept()
+
+            if self.tray_icon:
+                self.tray_icon.showMessage(
+                    APP_NAME,
+                    "App minimized to tray",
+                    self.tray_icon.Information,
+                    2000,
+                )
+            return
 
         event.accept()
 
-    def restart_app(self):
-        QApplication.quit()
-        os.execl(sys.executable, sys.executable, *sys.argv)
+    def restore_from_tray(self):
+        self.tray_manager.restore_from_tray()
 
     def exit_application(self):
-        self.is_quitting = True
-        self.tray_icon.hide()
-
-        app = QApplication.instance()
-        if app is not None:
-            app.quit()
+        self.tray_manager.exit_application()
 
     def notify(self, message: str):
-        self.statusBar().showMessage(message, 3000)
-        if self.settings.value("App/show_copy_notification", True, type=bool):
-            self.tray_icon.showMessage(
-                APP_NAME, message, QSystemTrayIcon.Information, 2000
-            )
+        self.tray_manager.notify(message)
 
     def load_categories(self):
         self.config = self.config_manager.load()
