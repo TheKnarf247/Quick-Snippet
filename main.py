@@ -2,7 +2,7 @@ import configparser
 import os
 import sys
 import json
-from pathlib import Path
+import ctypes
 
 try:
     from win32com.client import Dispatch
@@ -37,42 +37,22 @@ from PyQt5.QtWidgets import (
 from _internal.version import __version__
 from app.widgets import NoteListItemWidget
 from app.config_manager import ConfigManager
+from pathlib import Path
+from app.theme_manager import (
+    icon_path,
+    app_icon_path,
+    set_windows_title_bar_theme,
+)
 
 APP_NAME = "Quick Snippet"
 APP_DIR = Path(os.getenv("APPDATA") or Path.home()) / APP_NAME
 CONFIG_FILE = APP_DIR / "QuickSnippetConfig.ini"
 SETTINGS_FILE = APP_DIR / "settings.ini"
 
-
-def icon_path(filename: str, theme: str = "dark") -> str:
-    base = resource_path("_internal/icons")
-
-    if str(theme).lower() == "light":
-        name = Path(filename).name
-        if name.startswith("Icon"):
-            light_name = name.replace("Icon", "IconLight", 1)
-            light_path = base / light_name
-            if light_path.exists():
-                return str(light_path)
-
-    return str(base / filename)
-
-
 APP_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE.touch(exist_ok=True)
 SETTINGS_FILE.touch(exist_ok=True)
 
-
-def resource_path(relative_path: str) -> Path:
-    base_path = getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)
-    return Path(base_path) / relative_path
-
-
-def app_icon_path() -> str:
-    ico_path = resource_path("QuickSnippet.ico")
-    if ico_path.exists():
-        return str(ico_path)
-    return ""
 
 def ensure_default_data() -> None:
     config_manager = ConfigManager(CONFIG_FILE)
@@ -1429,27 +1409,6 @@ def add_menu_bar(window: QuickSnippetWindow):
         )
     )
     about_menu.addAction(about_action)
-
-
-import ctypes
-from ctypes import wintypes
-
-
-def set_windows_title_bar_theme(window, dark: bool):
-    try:
-        hwnd = int(window.winId())
-        DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-        value = ctypes.c_int(1 if dark else 0)
-
-        ctypes.windll.dwmapi.DwmSetWindowAttribute(
-            wintypes.HWND(hwnd),
-            DWMWA_USE_IMMERSIVE_DARK_MODE,
-            ctypes.byref(value),
-            ctypes.sizeof(value),
-        )
-    except Exception:
-        pass
-
 
 if __name__ == "__main__":
     ensure_default_data()
