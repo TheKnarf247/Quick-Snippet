@@ -33,3 +33,12 @@ bld/
 .history/
 
 .editorconfig
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Optional but nice
+.env
+.vscode/
