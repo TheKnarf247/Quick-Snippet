@@ -1,8 +1,9 @@
 [Setup]
 AppName=Quick Snippet
-AppVersion=1.0.1
+AppVersion=1.0.2
 DefaultDirName={autopf}\Quick Snippet
 DefaultGroupName=Quick Snippet
+InfoBeforeFile=readme.txt
 OutputDir=installer
 OutputBaseFilename=QuickSnippetInstaller
 Compression=lzma
