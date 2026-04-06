@@ -66,3 +66,5 @@ __pycache__/
 *.spec
 *.iss
 *.ico
+/UpgradeLog.htm
+/UpgradeLog2.htm
