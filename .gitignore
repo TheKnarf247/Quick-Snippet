@@ -46,6 +46,7 @@ __pycache__/
 # Build artifacts
 dist/
 build/
+installer/
 
 # Python cache
 __pycache__/
@@ -56,3 +57,12 @@ __pycache__/
 
 # Misc
 *.log
+# Visual Studio
+*.pyproj
+*.pyproj.user
+*.slnx
+
+# Packaging
+*.spec
+*.iss
+*.ico
